@@ -1,0 +1,69 @@
+Practical Machine Learning Project
+========================================================
+
+## Summary of the project
+
+#### The goal of this project is to predict the manner in which they did the exercise by using classification algorithms. The data we used for this project comes from http://groupware.les.inf.puc-rio.br/har.
+
+## Loading the data
+```{r, echo = TRUE}
+# Download the required file
+if (!file.exists("/Users/helenxu/Desktop/Coursera/PracticalMachineLearning/pml-training.csv")) {
+    download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv","/Users/helenxu/Desktop/Coursera/PracticalMachineLearning/pml-training.csv")}
+
+if (!file.exists("/Users/helenxu/Desktop/Coursera/PracticalMachineLearning/pml-testing.csv")) {
+    download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv","/Users/helenxu/Desktop/Coursera/PracticalMachineLearning/pml-testing.csv")}
+```
+
+```{r, echo = TRUE}
+# Load the data into the working directory
+training = read.csv("pml-training.csv", na.strings = c("", "NA"))
+testing = read.csv("pml-testing.csv", na.strings = c("", "NA"))
+```
+
+```{r, echo = TRUE}
+# Some exploratory data analysis
+dim(training)
+dim(testing)
+
+# By looking at the training dataset, we found that there are a lot of NA values.
+```
+
+## Processing the data
+```{r, echo = TRUE}
+# We would remove the columns which has NA values in the training/testing dataset.
+training = training[,colSums(is.na(training)) == 0]
+testing = testing[, colSums(is.na(testing)) == 0]
+dim(training);dim(testing)
+
+# By looking at the data, we found that the column 1 and 2 is the serial number and the user name, we also want to eliminate them in the new data set.
+training = training[, c(3:60)]
+testing = testing[,c(3:60)]
+```
+
+## Model Fitting
+### We would like to use the random forest to do the classification problem.
+```{r, echo = TRUE}
+library(caret)
+# We would partition the training set into train and test dataset.
+inTrain = createDataPartition(y = training$classe, p = 0.7, list = FALSE)
+train = training[inTrain,]
+test = training[-inTrain,]
+
+# We would use the caret package to fit train the data. We select the method to be random forest and the use the 5-fold cross validation.
+modFit = train(classe~., data = train, method = "rf", trControl = trainControl(method = "cv", number = 5, allowParallel = TRUE))
+print(modFit)
+```
+
+## Out of sample accuracy
+```{r, echo = TRUE}
+testPred = predict(modFit, test)
+confusionMatrix(testPred, test$classe)
+# As we can see form the above statistics, the random forest data classify the data pretty well, the Accuracy is greater than 0.99. We expect the accuracy to be pretty high if the training algorithm is applied to the testing dataset.
+```
+
+## Predictions of the testing set
+```{r, echo = TRUE}
+testingPred = predict(modFit, testing)
+testingPred
+```
